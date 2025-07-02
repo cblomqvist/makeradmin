@@ -1,0 +1,35 @@
+# This Dockerfile creates a "builder" container for the makeradmin project.
+# It includes all necessary dependencies to build the application and its Docker images.
+# It's designed to be used with the Docker-out-of-Docker (DooD) method.
+
+# Use a Python 3.11 base image, as it's a key dependency for makeradmin.
+FROM python:3.11-slim-bookworm
+
+# Avoid prompts from apt during installation.
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build dependencies: make, npm, git, and prerequisites for Docker client.
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    npm \
+    git \
+    curl \
+    gnupg \
+    lsb-release \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the Docker client, buildx plugin, and Compose plugin.
+# We only need the client tools, not the full daemon.
+# See https://docs.docker.com/engine/install/debian/
+RUN install -m 0755 -d /etc/apt/keyrings
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+RUN chmod a+r /etc/apt/keyrings/docker.gpg
+RUN echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  tee /etc/apt/sources.list.d/docker.list > /dev/null
+RUN apt-get update && apt-get install -y docker-ce-cli docker-buildx-plugin docker-compose-plugin
+
+# Set the working directory. The project source will be mounted here.
+WORKDIR /app
