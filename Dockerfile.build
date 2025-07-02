@@ -31,5 +31,13 @@ RUN echo \
   tee /etc/apt/sources.list.d/docker.list > /dev/null
 RUN apt-get update && apt-get install -y docker-ce-cli docker-buildx-plugin docker-compose-plugin
 
-# Set the working directory. The project source will be mounted here.
+# Create a non-root user 'makeradmin' and its group
+RUN groupadd -r makeradmin --gid=1001 && \
+    useradd -r -u 1000 --gid=makeradmin -m -s /bin/bash makeradmin
+
+# Set the working directory and change its ownership to the new user
 WORKDIR /app
+
+# Switch to the non-root user
+USER makeradmin
+
